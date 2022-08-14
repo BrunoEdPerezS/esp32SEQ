@@ -29,6 +29,7 @@ bool arpedSTART=false;
 //int seqBANK1[16], seqBANK2[16];
 int step;
 int debTIME = 250;
+int scrollTIME = 500;
 long timeB1,timeB2,timeB3,timeB4,timeB5;
 long ltimeB1,ltimeB2,ltimeB3,ltimeB4,ltimeB5;
 int seqBANK1[16] = {0,0,0,1,0,0,1,0,0,1,1,1,0,0,1,1}; 
@@ -318,7 +319,7 @@ if(digitalRead(BUTTON5))
 
 
 //STEP EDITOR-----------------------------------------------------------
-//Trigger del EDITOR DE STEPS
+//Trigger del STEP EDITOR
 if(digitalRead(BUTTON2))
    {
     timeB2 = millis();
@@ -327,6 +328,8 @@ if(digitalRead(BUTTON2))
     //---------------------------
     stepedSTART = true;
     Serial.print("Step editor iniciado \n");
+    step = 0;
+    seqSCROLLING(step);
     //---------------------------
     ltimeB2 = timeB2;
     }
@@ -337,6 +340,27 @@ while(stepedSTART)
   //Serial.print("STEP EDITOR \n");
   //step editor code below
 
+  //BUTTON 2 SCROLL
+  if(digitalRead(BUTTON2))
+   {
+    timeB2 = millis();
+    if (timeB2 - ltimeB2 > scrollTIME)
+    {
+    //---------------------------
+    //Contador de steps
+    if (step == 15)
+    {
+    step = 0;
+    }
+    else
+    {
+    step = step+1;
+    }
+    seqSCROLLING(step);
+    //---------------------------
+    ltimeB2 = timeB2;
+    }
+    }
 
 
 
@@ -374,6 +398,8 @@ if(digitalRead(BUTTON3))
     //---------------------------
     arpedSTART = true;
     Serial.print("Arp editor iniciado \n");
+    step = 0;
+    seqSCROLLING(step);
     //---------------------------
     ltimeB3 = timeB3;
     }
@@ -384,6 +410,27 @@ while(arpedSTART)
   //Serial.print("ARP EDITOR \n"); 
   //arp editor code below
 
+  //BUTTON 2 SCROLL
+  if(digitalRead(BUTTON2))
+   {
+    timeB2 = millis();
+    if (timeB2 - ltimeB2 > scrollTIME)
+    {
+    //---------------------------
+    //Contador de steps
+    if (step == 15)
+    {
+    step = 0;
+    }
+    else
+    {
+    step = step+1;
+    }
+    seqSCROLLING(step);
+    //---------------------------
+    ltimeB2 = timeB2;
+    }
+    }
 
 
 
