@@ -90,7 +90,6 @@ void loop()
 
 
 //-----------------MODO SECUENCIA---------------------
-
 //Trigger del MODO SECUENCIA
 if(digitalRead(BUTTON1))
    {
@@ -257,13 +256,12 @@ if(digitalRead(BUTTON1))
     }
     }
 }
-
-
 //-----------------MODO SECUENCIA---------------------
 
 
 
-//****************MODO EDITOR SEQ*************************
+
+//****************MODO EDITOR*************************
 //Trigger del EDITOR DE SECUENCIA
 if(digitalRead(BUTTON2))
    {
@@ -285,7 +283,7 @@ if(digitalRead(BUTTON2))
 //Loop del modo editor
 while(modoEDITOR)
 {
-
+Serial.print("MODO EDITOR \n");
 if(digitalRead(BUTTON4))
    {
     timeB4 = millis();
@@ -319,6 +317,25 @@ if(digitalRead(BUTTON5))
     }
 
 
+//STEP EDITOR-----------------------------------------------------------
+//Trigger del EDITOR DE STEPS
+if(digitalRead(BUTTON2))
+   {
+    timeB2 = millis();
+    if (timeB2 - ltimeB2 > debTIME)
+    {
+    //---------------------------
+    stepedSTART = true;
+    Serial.print("Step editor iniciado \n");
+    //---------------------------
+    ltimeB2 = timeB2;
+    }
+    }
+
+while(stepedSTART)
+{
+  //Serial.print("STEP EDITOR \n");
+  //step editor code below
 
 
 
@@ -328,6 +345,44 @@ if(digitalRead(BUTTON5))
 
 
 
+  //Exit del step editor
+  if(digitalRead(BUTTON1))
+   {
+    timeB1 = millis();
+    if (timeB1 - ltimeB1 > debTIME)
+    {
+    //---------------------------
+    stepedSTART = false;
+    //Iniciamos step monitor y la secuencia seleccionada
+    seqTRIANGULOS_init();
+    stepMONITOR_init(seqVECTOR);
+    Serial.print("Saliendo del step editor \n");
+    //---------------------------
+    ltimeB1 = timeB1;
+    }
+    }  
+}
+
+
+
+//arp EDITOR-----------------------------------------------------------
+if(digitalRead(BUTTON3))
+   {
+    timeB3 = millis();
+    if (timeB3 - ltimeB3 > debTIME)
+    {
+    //---------------------------
+    arpedSTART = true;
+    Serial.print("Arp editor iniciado \n");
+    //---------------------------
+    ltimeB3 = timeB3;
+    }
+    }
+
+while(arpedSTART)
+{
+  //Serial.print("ARP EDITOR \n"); 
+  //arp editor code below
 
 
 
@@ -337,6 +392,23 @@ if(digitalRead(BUTTON5))
 
 
 
+  //Exit del arp editor
+  if(digitalRead(BUTTON1))
+   {
+    timeB1 = millis();
+    if (timeB1 - ltimeB1 > debTIME)
+    {
+    //---------------------------
+    arpedSTART = false;
+    //Iniciamos step monitor y la secuencia seleccionada
+    seqTRIANGULOS_init();
+    stepMONITOR_init(seqVECTOR);
+    Serial.print("Saliendo del arp editor \n");
+    //---------------------------
+    ltimeB1 = timeB1;
+    }
+    }  
+}
 
 
 
