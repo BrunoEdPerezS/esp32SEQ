@@ -22,7 +22,10 @@ Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 int miliSecs;
 int bpm = 100;
 bool modoSECUENCIA=false;
+bool modoEDITOR= false;
 bool seqSTART=false;
+bool stepedSTART=false;
+bool arpedSTART=false;
 //int seqBANK1[16], seqBANK2[16];
 int step;
 int debTIME = 250;
@@ -79,6 +82,12 @@ screenBPM(bpm);
 
 void loop()
 {
+
+
+
+
+
+
 
 //-----------------MODO SECUENCIA---------------------
 
@@ -217,16 +226,16 @@ while(seqSTART)
 
 
 //Secuencia OFF
-if(digitalRead(BUTTON2))
+if(digitalRead(BUTTON3))
    {
-    timeB2 = millis();
-    if (timeB2 - ltimeB2 > debTIME)
+    timeB3 = millis();
+    if (timeB3 - ltimeB3 > debTIME)
     {
     //---------------------------
     seqSTART = false;
     seqTRIANGULOS_init();
     //---------------------------
-    ltimeB2 = timeB2;
+    ltimeB3 = timeB3;
     }
     }
 }
@@ -248,15 +257,107 @@ if(digitalRead(BUTTON1))
     }
     }
 }
-}
+
 
 //-----------------MODO SECUENCIA---------------------
 
 
 
 //****************MODO EDITOR SEQ*************************
+//Trigger del EDITOR DE SECUENCIA
+if(digitalRead(BUTTON2))
+   {
+    timeB2 = millis();
+    if (timeB2 - ltimeB2 > debTIME)
+    {
+    //---------------------------
+    modoEDITOR = true;
+    //Iniciamos step monitor y la secuencia 1 predeterminada
+    seqTRIANGULOS_init();
+    stepMONITOR_init(seqBANK1);
+    storeVECTOR(seqBANK1,seqVECTOR);
+    Serial.print("Modo editor iniciado \n");
+    //---------------------------
+    ltimeB2 = timeB2;
+    }
+    }
+
+//Loop del modo editor
+while(modoEDITOR)
+{
+
+if(digitalRead(BUTTON4))
+   {
+    timeB4 = millis();
+    if (timeB4 - ltimeB4 > debTIME)
+    {
+    //---------------------------
+    //Iniciamos step monitor y la secuencia 1 predeterminada
+    seqTRIANGULOS_init();
+    stepMONITOR_init(seqBANK1);
+    storeVECTOR(seqBANK1,seqVECTOR);
+    Serial.print("FUERA:Cambiando a bank 1 \n");
+    //---------------------------
+    ltimeB4 = timeB4;
+    }
+    }
+
+if(digitalRead(BUTTON5))
+   {
+    timeB5 = millis();
+    if (timeB5 - ltimeB5 > debTIME)
+    {
+    //---------------------------
+    //Iniciamos step monitor y la secuencia 1 predeterminada
+    seqTRIANGULOS_init();
+    stepMONITOR_init(seqBANK2);
+    storeVECTOR(seqBANK2,seqVECTOR);
+    Serial.print("FUERA:Cambiando a bank 2 \n");
+    //---------------------------
+    ltimeB5 = timeB5;
+    }
+    }
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//Exit del modo editor
+if(digitalRead(BUTTON1))
+   {
+    timeB1 = millis();
+    if (timeB1 - ltimeB1 > debTIME)
+    {
+    //---------------------------
+    modoEDITOR = false;
+    //Iniciamos step monitor y la secuencia 1 predeterminada
+    seqTRIANGULOS_init();
+    seqSTEPS_init();
+    Serial.print("Saliendo del modo editor \n");
+    //---------------------------
+    ltimeB1 = timeB1;
+    }
+    }  
+}
 
 
 //****************MODO EDITOR SEQ*************************
@@ -266,7 +367,7 @@ if(digitalRead(BUTTON1))
 
 
 
-
+}
 //******************************FUNCIONES******************************
 //Iniciar pantalla
 void seqPANTALLA_init()
