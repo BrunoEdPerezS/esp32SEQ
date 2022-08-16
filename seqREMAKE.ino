@@ -34,7 +34,8 @@ long timeB1,timeB2,timeB3,timeB4,timeB5;
 long ltimeB1,ltimeB2,ltimeB3,ltimeB4,ltimeB5;
 int seqBANK1[16] = {0,0,0,1,0,0,1,0,0,1,1,1,0,0,1,1}; 
 int seqBANK2[16] = {1,1,1,0,1,1,0,1,1,0,0,0,1,1,0,0};
-
+int bankFLAG = 0;
+int seqNOTE[12][7];
 
 //Secuencia
 int seqVECTOR[16];
@@ -275,6 +276,7 @@ if(digitalRead(BUTTON2))
     seqTRIANGULOS_init();
     stepMONITOR_init(seqBANK1);
     storeVECTOR(seqBANK1,seqVECTOR);
+    editorDISPLAY();
     Serial.print("Modo editor iniciado \n");
     //---------------------------
     ltimeB2 = timeB2;
@@ -295,6 +297,7 @@ if(digitalRead(BUTTON4))
     seqTRIANGULOS_init();
     stepMONITOR_init(seqBANK1);
     storeVECTOR(seqBANK1,seqVECTOR);
+    bankFLAG = 0;
     Serial.print("FUERA:Cambiando a bank 1 \n");
     //---------------------------
     ltimeB4 = timeB4;
@@ -311,6 +314,7 @@ if(digitalRead(BUTTON5))
     seqTRIANGULOS_init();
     stepMONITOR_init(seqBANK2);
     storeVECTOR(seqBANK2,seqVECTOR);
+    bankFLAG = 1;
     Serial.print("FUERA:Cambiando a bank 2 \n");
     //---------------------------
     ltimeB5 = timeB5;
@@ -330,6 +334,7 @@ if(digitalRead(BUTTON2))
     Serial.print("Step editor iniciado \n");
     step = 0;
     seqSCROLLING(step);
+    stepDISPLAY();
     //---------------------------
     ltimeB2 = timeB2;
     }
@@ -362,14 +367,26 @@ while(stepedSTART)
     }
     }
 
+  //BUTTON 3 STEP TOGGLE
+  if(digitalRead(BUTTON3))
+   {
+    timeB3 = millis();
+    if (timeB3 - ltimeB3 > scrollTIME)
+    {
+    //---------------------------
+    //Toggle de steps
+    seqVECTOR[step]=toggleSTEPS(seqVECTOR,step);
+    //---------------------------
+    ltimeB3 = timeB3;
+    }
+    }
 
 
 
 
 
 
-
-  //Exit del step editor
+  //Exit&Save del step editor
   if(digitalRead(BUTTON1))
    {
     timeB1 = millis();
@@ -380,6 +397,11 @@ while(stepedSTART)
     //Iniciamos step monitor y la secuencia seleccionada
     seqTRIANGULOS_init();
     stepMONITOR_init(seqVECTOR);
+    if (bankFLAG==0){
+    storeVECTOR(seqVECTOR,seqBANK1);}
+    else{
+    storeVECTOR(seqVECTOR,seqBANK2);}
+    editorDISPLAY();
     Serial.print("Saliendo del step editor \n");
     //---------------------------
     ltimeB1 = timeB1;
@@ -400,6 +422,7 @@ if(digitalRead(BUTTON3))
     Serial.print("Arp editor iniciado \n");
     step = 0;
     seqSCROLLING(step);
+    arpDISPLAY();
     //---------------------------
     ltimeB3 = timeB3;
     }
@@ -450,6 +473,7 @@ while(arpedSTART)
     //Iniciamos step monitor y la secuencia seleccionada
     seqTRIANGULOS_init();
     stepMONITOR_init(seqVECTOR);
+    editorDISPLAY();
     Serial.print("Saliendo del arp editor \n");
     //---------------------------
     ltimeB1 = timeB1;
@@ -641,7 +665,7 @@ void stepMONITOR_init(int seqVECTOR[16])
 int toggleSTEPS(int seqVECTOR[16], int _step)
 {
    int output;
-   int step = (_step-1);
+   int step = (_step);
    //Pintar los steps qlos
    //stepMONITOR_init(seqMATRIX);
 //***********************************Caso de step prendio***********************************
@@ -775,10 +799,45 @@ void screenBPM(int bpm)
   oled.display();
 }
 
+/*
+void arpDISPLAY()
+{
+  String print = "ARP EDITOR";
+  oled.fillRect(0, 23, 100, 10, BLACK);
+  oled.setTextSize(1);
+  oled.setTextColor(WHITE);
+  oled.setCursor(60,23);
+  oled.println(print);
+  oled.display();
+}*/
 
+void editorDISPLAY()
+{
+  oled.fillRect(0, 0, 120, 10, BLACK);
+  oled.setTextSize(1);
+  oled.setTextColor(WHITE);
+  oled.setCursor(0,0);
+  oled.println("EDITOR ENABLED");
+  oled.display();
+}
 
+void arpDISPLAY()
+{
+  oled.fillRect(90, 0, 30, 10, BLACK);
+  oled.setTextSize(1);
+  oled.setTextColor(WHITE);
+  oled.setCursor(90,0);
+  oled.println("ARP");
+  oled.display();
+}
 
-
-
-
+void stepDISPLAY()
+{
+  oled.fillRect(90, 0, 30, 10, BLACK);
+  oled.setTextSize(1);
+  oled.setTextColor(WHITE);
+  oled.setCursor(90,0);
+  oled.println("STEP");
+  oled.display();
+}
    
