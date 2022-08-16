@@ -35,7 +35,13 @@ long ltimeB1,ltimeB2,ltimeB3,ltimeB4,ltimeB5;
 int seqBANK1[16] = {0,0,0,1,0,0,1,0,0,1,1,1,0,0,1,1}; 
 int seqBANK2[16] = {1,1,1,0,1,1,0,1,1,0,0,0,1,1,0,0};
 int bankFLAG = 0;
-int seqNOTE[12][7];
+int seqNOTE[16][2], arpBANK1[16][2], arpBANK2[16][2];
+
+int nota = 0;
+int octava = 0;
+
+
+
 
 //Secuencia
 int seqVECTOR[16];
@@ -69,7 +75,16 @@ void setup()
   {
   seqVECTOR[i] = 0;
   }
-
+  //Inicializamos matriz de notas
+  for (int i=0; i <= 15;i++)
+  {
+    for (int j=0; j <= 1;j++)
+  {
+    seqNOTE[i][j]=0;
+    arpBANK1[i][j]=0;
+    arpBANK2[i][j]=0;
+  }
+  }
 
 
   //Visualizar pantalla de inicio para secuenciador
@@ -78,17 +93,13 @@ void setup()
 
 
 //INICIALIZACION DE LOS DISPLAY
-screenONDA(0);
-screenBPM(bpm);
+//screenONDA(0);
+//screenBPM(bpm);
+mainDISPLAY();
 }
 
 void loop()
 {
-
-
-
-
-
 
 
 //-----------------MODO SECUENCIA---------------------
@@ -101,6 +112,7 @@ if(digitalRead(BUTTON1))
     //---------------------------
     modoSECUENCIA = true;
     //Iniciamos step monitor y la secuencia 1 predeterminada
+    oled.clearDisplay();
     seqTRIANGULOS_init();
     stepMONITOR_init(seqBANK1);
     storeVECTOR(seqBANK1,seqVECTOR);
@@ -256,6 +268,8 @@ if(digitalRead(BUTTON1))
     //---------------------------
     ltimeB1 = timeB1;
     }
+    //MAIN DISPLAY
+    mainDISPLAY();
     }
 }
 //-----------------MODO SECUENCIA---------------------
@@ -264,7 +278,7 @@ if(digitalRead(BUTTON1))
 
 
 //****************MODO EDITOR*************************
-//Trigger del EDITOR DE SECUENCIA
+//Trigger del EDITOR
 if(digitalRead(BUTTON2))
    {
     timeB2 = millis();
@@ -273,10 +287,11 @@ if(digitalRead(BUTTON2))
     //---------------------------
     modoEDITOR = true;
     //Iniciamos step monitor y la secuencia 1 predeterminada
+    oled.clearDisplay();
+    editorDISPLAY();
     seqTRIANGULOS_init();
     stepMONITOR_init(seqBANK1);
     storeVECTOR(seqBANK1,seqVECTOR);
-    editorDISPLAY();
     Serial.print("Modo editor iniciado \n");
     //---------------------------
     ltimeB2 = timeB2;
@@ -297,6 +312,7 @@ if(digitalRead(BUTTON4))
     seqTRIANGULOS_init();
     stepMONITOR_init(seqBANK1);
     storeVECTOR(seqBANK1,seqVECTOR);
+    storeMATRIX(arpBANK1,seqNOTE);
     bankFLAG = 0;
     Serial.print("FUERA:Cambiando a bank 1 \n");
     //---------------------------
@@ -314,6 +330,7 @@ if(digitalRead(BUTTON5))
     seqTRIANGULOS_init();
     stepMONITOR_init(seqBANK2);
     storeVECTOR(seqBANK2,seqVECTOR);
+    storeMATRIX(arpBANK2,seqNOTE);
     bankFLAG = 1;
     Serial.print("FUERA:Cambiando a bank 2 \n");
     //---------------------------
@@ -371,7 +388,7 @@ while(stepedSTART)
   if(digitalRead(BUTTON3))
    {
     timeB3 = millis();
-    if (timeB3 - ltimeB3 > scrollTIME)
+    if (timeB3 - ltimeB3 > debTIME)
     {
     //---------------------------
     //Toggle de steps
@@ -422,7 +439,11 @@ if(digitalRead(BUTTON3))
     Serial.print("Arp editor iniciado \n");
     step = 0;
     seqSCROLLING(step);
+    //Parametros para editor
     arpDISPLAY();
+    noteDISPLAY(seqNOTE[step][0],seqNOTE[step][1]);
+    nota =seqNOTE[step][0];
+    octava =seqNOTE[step][0];
     //---------------------------
     ltimeB3 = timeB3;
     }
@@ -450,19 +471,66 @@ while(arpedSTART)
     step = step+1;
     }
     seqSCROLLING(step);
+    noteDISPLAY(seqNOTE[step][0],seqNOTE[step][1]);
+    //Inicializar nota y octava post scroll
+    nota =seqNOTE[step][0];
+    octava =seqNOTE[step][0];
     //---------------------------
     ltimeB2 = timeB2;
     }
     }
+ 
+  //BUTTON 3 EDIT NOTE
+  if(digitalRead(BUTTON3))
+   {
+    timeB3 = millis();
+    if (timeB3 - ltimeB3 > debTIME)
+    {
+    //---------------------------
+    //Contador de notas
+    if (nota == 11)
+    {
+    nota = 0;
+    }
+    else
+    {
+    nota = nota+1;
+    }
+    seqNOTE[step][0] = nota;
+    noteDISPLAY(seqNOTE[step][0],seqNOTE[step][1]);
+    //---------------------------
+    ltimeB3 = timeB3;
+    }
+    }
+  //BUTTON 4 EDIT NOTE
+  if(digitalRead(BUTTON4))
+   {
+    timeB4 = millis();
+    if (timeB4 - ltimeB4 > debTIME)
+    {
+    //---------------------------
+    //Contador de notas
+    if (octava == 5)
+    {
+    octava = 0;
+    }
+    else
+    {
+    octava = octava+1;
+    }
+    seqNOTE[step][1] = octava;
+    noteDISPLAY(seqNOTE[step][0],seqNOTE[step][1]);
+    //---------------------------
+    ltimeB4 = timeB4;
+    }
+    }
 
 
 
 
 
 
-
-
-  //Exit del arp editor
+  //Exit&save del arp editor
   if(digitalRead(BUTTON1))
    {
     timeB1 = millis();
@@ -471,8 +539,13 @@ while(arpedSTART)
     //---------------------------
     arpedSTART = false;
     //Iniciamos step monitor y la secuencia seleccionada
+    oled.fillRect(0, 15, 40, 15, BLACK);
     seqTRIANGULOS_init();
     stepMONITOR_init(seqVECTOR);
+    if (bankFLAG==0){
+    storeMATRIX(seqNOTE,arpBANK1);}
+    else{
+    storeMATRIX(seqNOTE,arpBANK2);}
     editorDISPLAY();
     Serial.print("Saliendo del arp editor \n");
     //---------------------------
@@ -480,9 +553,6 @@ while(arpedSTART)
     }
     }  
 }
-
-
-
 
 //Exit del modo editor
 if(digitalRead(BUTTON1))
@@ -496,10 +566,13 @@ if(digitalRead(BUTTON1))
     seqTRIANGULOS_init();
     seqSTEPS_init();
     Serial.print("Saliendo del modo editor \n");
+    //MAIN DISPLAY
+    mainDISPLAY();
     //---------------------------
     ltimeB1 = timeB1;
     }
     }  
+
 }
 
 
@@ -619,10 +692,16 @@ void seqSCROLLING(int _step)
     oled.display();
 }
 
-//Store de la matriz
+//Store del vector de steps
 void storeVECTOR(int origen[16], int destino[16]) {
     memcpy(destino, origen, sizeof(int)*16);
 }
+
+//Store matriz de arpegio
+void storeMATRIX(int origen[16][2], int destino[16][2]) {
+    memcpy(destino, origen, sizeof(int)*16*2);
+}
+
 
 //Inicializar STEPS matrix (CUADRADOS)
 void stepMONITOR_init(int seqVECTOR[16])
@@ -747,6 +826,7 @@ int toggleSTEPS(int seqVECTOR[16], int _step)
    return output;
 }
 
+//---------------------------------------------------------------------
 //Variar BPM ????
 int variarBPM(int lectura)
 {
@@ -798,19 +878,34 @@ void screenBPM(int bpm)
   oled.println(print + String(bpm));
   oled.display();
 }
+//---------------------------------------------------------------------
 
-/*
-void arpDISPLAY()
+//De numeroNota a stringNota
+String traductorNOTA(int n)
 {
-  String print = "ARP EDITOR";
-  oled.fillRect(0, 23, 100, 10, BLACK);
-  oled.setTextSize(1);
-  oled.setTextColor(WHITE);
-  oled.setCursor(60,23);
-  oled.println(print);
-  oled.display();
-}*/
+  String NOTA;
+  if (n == 0) NOTA = "C";
+  if (n == 1) NOTA = "C#";
+  if (n == 2) NOTA = "D";
+  if (n == 3) NOTA = "D#";
+  if (n == 4) NOTA = "E";
+  if (n == 5) NOTA = "F";
+  if (n == 6) NOTA = "F#";
+  if (n == 7) NOTA = "G";
+  if (n == 8) NOTA = "G#";
+  if (n == 9) NOTA = "A";
+  if (n == 10) NOTA = "A#";
+  if (n == 11) NOTA = "B";
+  return NOTA;
+}
 
+
+
+
+
+
+
+//Displays para las funcionalidades
 void editorDISPLAY()
 {
   oled.fillRect(0, 0, 120, 10, BLACK);
@@ -841,3 +936,26 @@ void stepDISPLAY()
   oled.display();
 }
    
+void mainDISPLAY()
+{
+  oled.clearDisplay();
+  oled.setTextSize(2);
+  oled.setTextColor(WHITE);
+  oled.setCursor(0,0);
+  oled.println("MAIN");
+  oled.display();
+}
+
+void noteDISPLAY(int note, int octave)
+{
+  String NOTA;
+  NOTA = traductorNOTA(note);
+  oled.fillRect(0, 15, 40, 15, BLACK);
+  oled.setTextSize(2);
+  oled.setTextColor(WHITE);
+  oled.setCursor(0,15);
+  oled.println(NOTA);
+  oled.setCursor(25,15);
+  oled.println(octave);
+  oled.display();
+}
