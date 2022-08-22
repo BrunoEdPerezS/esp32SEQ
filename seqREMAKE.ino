@@ -2,7 +2,7 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-//#include "wavetables.h"
+#include "wavetables.h"
 
 
 //Definir parametros del OLED---------------------
@@ -10,7 +10,7 @@
 #define SCREEN_HEIGHT 64 
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 //Pines-------------------------------------------
-#define BUTTON1 25
+#define BUTTON1 26
 #define BUTTON2 33
 #define BUTTON3 32
 #define BUTTON4 14
@@ -26,25 +26,77 @@ bool modoEDITOR= false;
 bool seqSTART=false;
 bool stepedSTART=false;
 bool arpedSTART=false;
-//int seqBANK1[16], seqBANK2[16];
 int step;
 int debTIME = 250;
 int scrollTIME = 500;
 long timeB1,timeB2,timeB3,timeB4,timeB5;
 long ltimeB1,ltimeB2,ltimeB3,ltimeB4,ltimeB5;
-int seqBANK1[16] = {0,0,0,1,0,0,1,0,0,1,1,1,0,0,1,1}; 
-int seqBANK2[16] = {1,1,1,0,1,1,0,1,1,0,0,0,1,1,0,0};
+int seqBANK1[16];
+int seqBANK2[16];
 int bankFLAG = 0;
 int seqNOTE[16][2], arpBANK1[16][2], arpBANK2[16][2];
-
 int nota = 0;
 int octava = 0;
-
-
-
-
-//Secuencia
 int seqVECTOR[16];
+
+//Declaracion para el dds
+
+volatile int onda = 0;
+hw_timer_t *My_timer = NULL;
+portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+volatile int count =0; 
+unsigned long buttonTIME = 0;  
+unsigned long lastBTIME = 0; 
+int note, octa;
+uint32_t acumuladorFASE = 0x00000000;
+uint8_t  addressPOINTER = 0x00;
+volatile bool seqCORRE = false;
+volatile int stepSTATE;
+
+
+//escribir la ISR del DSS----------------------------
+void IRAM_ATTR onTimer(){
+acumuladorFASE = acumuladorFASE + noteMATRIX[note][octa];
+addressPOINTER = acumuladorFASE >> 24; //Shiftear los bits
+// Condiciones para el cambio de onda
+if (seqCORRE && (stepSTATE == 1)){
+if (onda ==0)
+{
+   dacWrite(25, SINE[addressPOINTER]);
+}
+if (onda ==1)
+{
+   dacWrite(25, SAW[addressPOINTER]);
+}
+if (onda ==2)
+{
+   dacWrite(25, TRIANGLE[addressPOINTER]);
+}
+if (onda ==3)
+{
+   dacWrite(25, SQUARE[addressPOINTER]);
+}
+}
+else dacWrite(25, 0);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 void setup()
@@ -56,8 +108,13 @@ void setup()
   pinMode(BUTTON3,INPUT_PULLDOWN);
   pinMode(BUTTON4,INPUT_PULLDOWN);
   pinMode(BUTTON5,INPUT_PULLDOWN);
-  
   pinMode(clockOUT,OUTPUT);
+
+  //Timer DDS
+  My_timer = timerBegin(0, 80, true);
+  timerAttachInterrupt(My_timer, &onTimer, true);
+  timerAlarmWrite(My_timer,10, true);
+  timerAlarmEnable(My_timer); 
 
   //Iniciar monitor serial
   Serial.begin(9600);
@@ -74,6 +131,8 @@ void setup()
   for (int i=0; i <= 15;i++)
   {
   seqVECTOR[i] = 0;
+  seqBANK1[16] = 0;
+  seqBANK2[16] = 0;
   }
   //Inicializamos matriz de notas
   for (int i=0; i <= 15;i++)
@@ -168,6 +227,8 @@ if(digitalRead(BUTTON2))
     {
     //---------------------------
     seqSTART = true;
+    seqCORRE = seqSTART;
+    
     step = 0;
     seqTRIANGULOS_init();
     //---------------------------
@@ -189,6 +250,7 @@ while(seqSTART)
     //Cargamos BANK1
     stepMONITOR_init(seqBANK1);
     storeVECTOR(seqBANK1,seqVECTOR);
+    storeMATRIX(arpBANK1,seqNOTE);
     Serial.print("Cambiando a bank 1 \n");
     Serial.print("\n");
     //---------------------------
@@ -205,6 +267,7 @@ while(seqSTART)
     //Cargamos BANK2
     stepMONITOR_init(seqBANK2);
     storeVECTOR(seqBANK2,seqVECTOR);
+    storeMATRIX(arpBANK2,seqNOTE);
     Serial.print("Cambiando a bank 2 \n");
     Serial.print("\n");
     //---------------------------
@@ -215,6 +278,10 @@ while(seqSTART)
   //scrolling....
   seqSCROLLING(step);
   //Salidas para los estados de steps
+  stepSTATE = seqVECTOR[step];
+  note = seqNOTE[step][0];
+  octa = seqNOTE[step][1];
+
   if(seqVECTOR[step] == 1)
   {
       digitalWrite(clockOUT,HIGH);
@@ -238,19 +305,38 @@ while(seqSTART)
   }
 
 
-//Secuencia OFF
+//Cambio de onda
 if(digitalRead(BUTTON3))
    {
     timeB3 = millis();
     if (timeB3 - ltimeB3 > debTIME)
     {
     //---------------------------
-    seqSTART = false;
-    seqTRIANGULOS_init();
+    if (onda == 3) {
+      onda = 0;
+    }
+    else {
+      onda = onda + 1;
+    }
     //---------------------------
     ltimeB3 = timeB3;
     }
+    }  
+
+//Secuencia OFF
+if(digitalRead(BUTTON2))
+   {
+    timeB2 = millis();
+    if (timeB2 - ltimeB2 > debTIME)
+    {
+    //---------------------------
+    seqSTART = false;
+    seqCORRE = seqSTART;
+    seqTRIANGULOS_init();
+    //---------------------------
+    ltimeB2 = timeB2;
     }
+    }  
 }
 
 //Salida del modo secuencia
@@ -898,11 +984,6 @@ String traductorNOTA(int n)
   if (n == 11) NOTA = "B";
   return NOTA;
 }
-
-
-
-
-
 
 
 //Displays para las funcionalidades
