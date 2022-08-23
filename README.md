@@ -20,31 +20,59 @@ Ahora con esto explicado, voy a explicar el funcionamiento de un secuenciador. E
 
 Steps recorridos de pana
 
-Esto significa que realizamos nuestra secuencia a medida que recorremos los steps. Cada uno de estos steps, representará una figura músical, sea una corchea, semicorchea, negra, todo depende de a que velocidad estamos cambiando entre cada uno de ellos. Y con ello, un apartado que no he querido mencionar. El elemento más importante de la música. El tempo. La velocidad a la que recorremos los steps, y la duración de cada step depende del tempo. Este nos dirá cuando debemos cambiar de un step a otro, en funcion a que figura ritmica representa dicho step. Ahora, como bien sabemos, el compás más común en la música es el 4/4, de forma que la mayoría de los displays de los secuenciadores, representan un compás de 4/4, donde cada step corresponde a una semicorchea o corchea (es lo más común, pero también es común que este 4/4 se pueda subdividir o icluso la duración de los steps se pueda configurar). De esta forma los dos display de secuencia más comunes son 8 pasos (corcheas) y 16 pasos (semicorcheas), de como esos se puedan configurar no me hago responsable.
+Esto significa que realizaremos nuestra secuencia a medida que recorremos los steps. Cada uno de estos steps, representará una figura músical, sea una corchea, semicorchea, negra, todo depende de a que velocidad estamos cambiando entre cada uno de ellos. Esto dependerá del tempo, debemos aregurarnos que cambiamos de un step al otro de acuerdo a un tempo determinado, usualmente medido en bpm. De forma que la velocidad a la que recorremos los steps, y la duración de cada step dependerá del tempo. Este nos dirá cuando debemos pasar de un step a otro, en funcion a que figura ritmica representa dicho step. 
+
+Ahora, ¿como se representan estos steps?, bien sabemos, el compás más común en la música es el 4/4, de forma que la mayoría de los displays de los secuenciadores, representan un compás de 4/4, donde cada step corresponde a una semicorchea o corchea (es lo más común, pero también es común que este 4/4 se pueda subdividir o icluso la duración de los steps se pueda configurar). De esta forma los dos display de secuencia más comunes son 8 pasos (corcheas) y 16 pasos (semicorcheas), de como esos se puedan configurar no me hago responsable.
 
 Step secuencers
 
-Ahora una parte important de diseño, es el estado de cada step, estos son High o Low, el step puede estar "encendido" o "apagado", cada uno de estos estaos puede representar un evento. Por ejemplo, tocar una nota, o mantener silecio. Eso significa que configurando, que steps estan encendidos y cuales apagados, podemos programar una secuencia rítmica. Esta es la principal tarea de un secuenciador. Pero no solo eso, podemos ir más allá, podemos decirle tambien a un intrumento, que nota debe tocar en determinado step, de forma que nuestra secuencia ritmica ahora se ha convertido en una melodía. Ahora ¿Como hacer esto? Esa es la parte realmente buena.
+Ahora una parte importante del secuenciado es que hacemos en cada step, estos steps representan las divisiones de tiempo. Que hacer en cada step, eso depende de su "estado", usualmente los steps se consideran como switches lógicos, es decir, pueden estar encendidos o apagados, high o low, 1 o 0, y pueden alternar entre estos estados. Este estado determinará que debemos hacer en su step correspondiente. Si este en high, debemos tocar una nota, y si este es low, debemos "hacer silencio", es decir, no tocar una nota. Ahora implementando este sistema podemos establecer patrones rítmicos, sería como escribir en lenguaje "binario" una partitura músical alternando entre figuras y silencios.
 
+partitura step secuencer
 
-## Secuenciador electrónico
+Con lo dicho anteriormente es facil escribir patrones rítmicos, solo debemos encender los steps donde queremos que "haya sonido" y apagar en los que queremos "silencio".
 
-Primero que nada, acá explicaré como hacer funcionar un secuenciador, no como construirlo, ya que más adelante lo implementaré en software, si alguien quiere un esquemático y listas de componentes hay muchos en internet y de calidad bastante buenos, voy a mencionar ciertos componentes porque sirven para explicar muy visualmente como funcionan estos dispositivos.
+## Secuenciador por software 
 
-Ahora, vamos a abstraernos bastante de los elementos "técnicos" del sintetizador, vamos a hablar a grandes rasgos como funciona eso y nos centraremos en el secuenciador. 
+En este apartado, vamos a entrar de lleno al diseño del secuenciador del ESP32, así que sin ánimos de malgastar más texto, vamos a establecer las bases del proyecto.
 
-Para crear un secuenciador lo principal que necesitamos es, algo que represente los steps, algo que nos entregue el tempo, y algo que nos permita alternar el estado de los steps. Estos 3 elementos son esenciales y se resuelven fácilmente, si alguien tuvo clases de electrónica digital seguro recuerda los contadores binarios y sus hermanos mayores los contadores decodificados. Nos centraremos en el contador decodificado, ¿Que hace? Es un circuito integrado, un chip que bueno, cuenta, jaja, pero a diferencia del contador binario, este lo hace a travez de sus pines. Es decir, a medida que el contador va contando, 0, 1, 2, 3 y así, va entregando estados a travez de sus pines de salida, usualmente correspondientes al número de la cuenta, es decir, en el 0 se enciende determinado pin, en el 1, otro pin, en el 2, otro pin distinto y así mientras que claro, cada vez que cambia la cuenta el pin del numero anterior se apaga, de forma que el contador entrega la informacion de "en que paso está" a traves de "que pin esta encendido", y una vez que llega al ultimo pin, la cuenta comienza desde 0. Así que es muy fácil pensar que esta cosa va a hacer el 80% del trabajo, y sí. Es así, con esto tenemos una representación sólida de los steps y además podemos hacer que la cuenta sea realizada a una velocidad determinada (podemos setear el tempo) ¿como?. Como buen sistema digital, este contador funciona con una señal de reloj, cada vez que detecta un cambio de voltaje positivo en la señal de reloj, el contador aumenta la cuenta. Entonces podemos ajustar el tempo del secuenciador mediante la frecuencia de la señal de reloj.
+1. El secuenciador será implementado en un ESP32 y mostrará los 16 steps de la secuencia mediante una pantalla OLED.
 
-Con todo esto, lo unico que necesitamos es una forma de monitorear la secuencia, y de alternar los leds entre apagado y encendido. Bueno fácil, leds e interruptores. Conectaremos un led a cada salida del contador y un interruptor, de esta forma cada vez que un pin este encendido, se encenderá el led. Y mediante el interrptor podemos hacer que dicha señal llegue o no a nuestro "dispositivo de sonido". El diagrama de esto sería así.
+2. Contaremos con 5 pulsadores para controlar el secuenciador.
 
-Diagrama secuenciador simple
+3. El secuenciador contará con 2 modalidades principales, reproducción de secuencias y editor de secuencias.
 
-Listo, con esto tenemos un secuenciador simple, que le dice nuestro "dispositivo de sonido" mediante señales electricas cuando debe hacer ruido y cuando no, lo cual es fácil e intuitivo de controlar mediante los interruptores. Ahora obviamente los secuenciadores comerciales tienen otro tipo de controles más complejos, como el gate, trigger, y blablabla. Ya lo dije, nosotros nos centraremos en dos cosas, decirle al "dispositivo de sonido" cuando hacer ruido y que "nota debe tocar". La primera con este "aproach" ya esta cubierta. ¿Como hacemos la segunda? Bueno es más complejo, pero no imposible, digamos que nuestro "dispositivo de sonido" puede leer votaje y tocar una nota determinada de acuerdo a un nivel de voltaje correspondiente (es un VCO, pero shhh), es decir, si le llega 1 volt, toca un Do, si le llegan 2 toca un Re, así. Entonces conectaremos un potenciómetro, y un interruptor "controlado" (puede ser un transistor) despues de cada interruptor de "step". El interruptor de "step" dira si debemos tocar o no la nota, y cuando este diga que debemos tocarla, activara el interruptor controlado que le hará llegar un voltaje determinado al "dispositivo de sonido", el cual lo leerá y pum! tocará la nota correspondiente. La verdad no era tan complicado. Ahora podemos decirle al "dispositivo de sonido" que nota debe tocar mediante los potenciómetros, ya que con estos controlamos el voltaje que le entregaremos en cada step. Y así podemos configurar una secuencia rítmica, con los interruptores de step, y una secuencia de notas, con los potenciómetros. Espectacular.
+4. El editor de secuencia permitirá crear 2 patrones de secuencia, tanto de forma rítmica como melódica, es decir podremos configurar que notas reproducir y cuando, estos patrones serán reproducidos a travéz del modo reproducción.
 
-Figura sec electrónico completo
+5. Se debe considerar un control para los BPM de la secuencia.
 
+6. La sintesis de sonido será realizada por el NCO diseñado en el proyecto anterior, es decir, de cierta forma vamos a controlar el NCO con el secuenciador.
 
+Ahora considerando estos puntos, vamos a comenzar por el primer apartado, como es que vamos almacenar la información correspondiente a cada secuencia. Y como vamos a reproducirla.
 
+## Bancos de secuencia y banco de arpegio
+
+Almacenaremos dos patrones de secuencia, estos patrones los denominaremos por su palabra en inglés **Pattern** y cada uno contará con dos variables correspondientes, un banco de secuencia y un banco de arpegio.
+
+El banco de secuencia será un vector que contiene la información del estado de cada step dentro del pattern, "1" para encendido y "0" para apagado.
+
+El banco de arpegio contendrá la información de que nota debe reproducirse en cada step, esta informacio se divide en 2 categorías, la nota en sí, representada por los números desde el 0 al 11 (serán 12 notas en total considerando los sostenidos), por ejemplo Do será el 0, Do# será el 1 y así hasta el Si. La segunda cantegoría de información contendrá la octava correspondiente a la nota.
+
+REPRESENTACION DE LOS BANCOS COMO TABLAS
+
+Bien, con esto explicado cabe decir que de ahora en adelante trabajaremos las notas musicales en clave americana. Y pasaremos a explicar en como vamos a reproducir el sonido.
+
+### Recuerdos del DDS
+
+Haciendo memoria del proyecto anterior sabemos que en un NCO podemos variar la frecuencia de la onda que se reproduce mediante la "tuning word" representada por la letra "**M**", ahora, considerando esto y la ecuación básica del NCO tenemos que.
+
+$$ M =\frac{F_{salida} 2^{N}}{F_{CLK}}$$
+
+Donde $F_{salida}$ es literal la frecuencia que queremos a la salida. En nuestro caso actual, este valor corresponderá a la frecuencia correspondiente a cada una de las notas musicales que queremos reproducir con el secuenciador. De forma que para acceder de forma óptima a esos valores vamos a crear una tabla con todas las notas desde las octavas 1 a la 7, y sus resprectivas frecuencias. Luego crearemos otra tabla, la cual contendrá los valores respectivos de **M** para cada una de estas frecuencias, y a esa tabla la llamaremos "**Matriz de notas**".
+
+Grafico matriz de notas
+
+Así le diremos al NCO que nota debe tocar, accediendo a los valores de **M** almacenados en esta tabla.
 
 
 
