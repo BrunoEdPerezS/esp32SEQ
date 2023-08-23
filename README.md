@@ -1,4 +1,4 @@
-# Secuenciador musical utilizando ESP32
+# Secuenciador musical utilizando ESP32 (incompleto)
 
 En este proyecto la idea es ir más alla con los conceptos del DDS y el NCO implementados en el proyecto anterior (si alguien lo quiere ver, acá esta el link: https://github.com/BrunoEdPerezS/ddsESP32) implementando un secuenciador en el mismo micro.
 
